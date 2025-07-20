@@ -117,13 +117,10 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
           description: "User updated successfully",
         });
       } else {
-        // Create new user - Note: In real app, you'd also create auth.users entry
+        // Create new user
         const { error } = await supabase
           .from("users")
           .insert([{
-            // For demo purposes, we'll use a dummy user_id
-            // In real implementation, you'd create the auth user first
-            user_id: crypto.randomUUID(),
             first_name: formData.first_name,
             last_name: formData.last_name,
             email: formData.email,
