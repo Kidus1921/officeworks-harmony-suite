@@ -33,6 +33,9 @@ interface UserData {
   role_id: string;
   department: string;
   status: string;
+  user_id_login?: string;
+  password_hash?: string;
+  is_active?: boolean;
 }
 
 interface UserFormProps {
@@ -52,6 +55,8 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
     role_id: "",
     department: "",
     status: "Active",
+    user_id_login: "",
+    is_active: true,
   });
   const { toast } = useToast();
 
@@ -68,6 +73,8 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
           role_id: "",
           department: "",
           status: "Active",
+          user_id_login: "",
+          is_active: true,
         });
       }
     }
@@ -91,6 +98,28 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
     }
   };
 
+  const generateUserIdAndPassword = async (roleId: string) => {
+    try {
+      // Get role name
+      const role = roles.find(r => r.id === roleId);
+      if (!role) return { user_id: "", password: "" };
+
+      // Generate user ID
+      const { data: userIdData, error: userIdError } = await supabase
+        .rpc('generate_user_id', { role_name: role.role_name });
+
+      if (userIdError) throw userIdError;
+
+      // Generate password
+      const password = Math.random().toString(36).slice(-8).toUpperCase();
+
+      return { user_id: userIdData, password };
+    } catch (error) {
+      console.error("Error generating user credentials:", error);
+      return { user_id: "", password: "" };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -98,16 +127,34 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
     try {
       if (user?.id) {
         // Update existing user
+        const updateData: any = {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          role_id: formData.role_id,
+          department: formData.department,
+          status: formData.status,
+        };
+
+        // Include user_id_login if it's provided and different
+        if (formData.user_id_login && formData.user_id_login !== user.user_id_login) {
+          // Check for duplication
+          const { data: existingUser } = await supabase
+            .from("users")
+            .select("id")
+            .eq("user_id_login", formData.user_id_login)
+            .neq("id", user.id)
+            .single();
+
+          if (existingUser) {
+            throw new Error("User ID already exists. Please choose a different one.");
+          }
+          updateData.user_id_login = formData.user_id_login;
+        }
+
         const { error } = await supabase
           .from("users")
-          .update({
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            email: formData.email,
-            role_id: formData.role_id,
-            department: formData.department,
-            status: formData.status,
-          })
+          .update(updateData)
           .eq("id", user.id);
 
         if (error) throw error;
@@ -118,6 +165,31 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
         });
       } else {
         // Create new user
+        let userIdLogin = formData.user_id_login;
+        let password = "";
+
+        if (!userIdLogin) {
+          // Auto-generate user ID and password
+          const credentials = await generateUserIdAndPassword(formData.role_id);
+          userIdLogin = credentials.user_id;
+          password = credentials.password;
+        } else {
+          // Check for duplication
+          const { data: existingUser } = await supabase
+            .from("users")
+            .select("id")
+            .eq("user_id_login", userIdLogin)
+            .single();
+
+          if (existingUser) {
+            throw new Error("User ID already exists. Please choose a different one.");
+          }
+          password = Math.random().toString(36).slice(-8).toUpperCase();
+        }
+
+        // Hash password (in real app, you'd hash this properly)
+        const passwordHash = btoa(password); // Simple base64 encoding for demo
+
         const { error } = await supabase
           .from("users")
           .insert([{
@@ -127,14 +199,21 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
             role_id: formData.role_id,
             department: formData.department,
             status: formData.status,
+            user_id_login: userIdLogin,
+            password_hash: passwordHash,
+            is_active: true,
           }]);
 
         if (error) throw error;
 
         toast({
           title: "Success",
-          description: "User created successfully",
+          description: `User created successfully! User ID: ${userIdLogin}, Password: ${password}`,
+          duration: 10000,
         });
+
+        // TODO: Send email with credentials here
+        console.log(`User credentials - ID: ${userIdLogin}, Password: ${password}`);
       }
 
       onOpenChange(false);
@@ -232,6 +311,17 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
                   setFormData({ ...formData, department: e.target.value })
                 }
                 placeholder="e.g., Engineering, Marketing"
+              />
+            </div>
+            <div>
+              <Label htmlFor="user_id_login">User ID (Optional - Auto-generated if empty)</Label>
+              <Input
+                id="user_id_login"
+                value={formData.user_id_login}
+                onChange={(e) =>
+                  setFormData({ ...formData, user_id_login: e.target.value })
+                }
+                placeholder="Leave empty for auto-generation"
               />
             </div>
             <div>

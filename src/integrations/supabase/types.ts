@@ -14,6 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
+      meeting_participants: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          meeting_link: string | null
+          meeting_type: string | null
+          organizer_id: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          meeting_type?: string | null
+          organizer_id?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          meeting_type?: string | null
+          organizer_id?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roles: {
         Row: {
           created_at: string
@@ -95,11 +187,14 @@ export type Database = {
           email: string
           first_name: string
           id: string
+          is_active: boolean | null
           last_login: string | null
           last_name: string
+          password_hash: string | null
           role_id: string
           status: string | null
           updated_at: string
+          user_id_login: string | null
         }
         Insert: {
           created_at?: string
@@ -107,11 +202,14 @@ export type Database = {
           email: string
           first_name: string
           id?: string
+          is_active?: boolean | null
           last_login?: string | null
           last_name: string
+          password_hash?: string | null
           role_id: string
           status?: string | null
           updated_at?: string
+          user_id_login?: string | null
         }
         Update: {
           created_at?: string
@@ -119,11 +217,14 @@ export type Database = {
           email?: string
           first_name?: string
           id?: string
+          is_active?: boolean | null
           last_login?: string | null
           last_name?: string
+          password_hash?: string | null
           role_id?: string
           status?: string | null
           updated_at?: string
+          user_id_login?: string | null
         }
         Relationships: [
           {
@@ -140,7 +241,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_user_id: {
+        Args: { role_name: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
