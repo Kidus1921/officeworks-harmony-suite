@@ -3,11 +3,9 @@ import {
   LayoutDashboard,
   Users,
   CheckSquare,
-  Clock,
   Calendar,
   FileText,
   UserCheck,
-  Settings,
   Building2
 } from "lucide-react";
 import {
@@ -26,11 +24,10 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Users", href: "/users", icon: Users },
   { name: "Tasks", href: "/tasks", icon: CheckSquare },
-  { name: "Attendance", href: "/attendance", icon: Clock },
   { name: "Meetings", href: "/meetings", icon: Calendar },
-  { name: "Documents", href: "/documents", icon: FileText },
-  { name: "Leave Requests", href: "/leave", icon: UserCheck },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Personal Todo", href: "/personal-todo", icon: FileText },
+  { name: "Attendance", href: "/attendance", icon: UserCheck },
+  { name: "Leave Requests", href: "/leave-requests", icon: UserCheck },
 ];
 
 export default function AppSidebar() {

@@ -1,6 +1,7 @@
 import { Bell, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,9 @@ import { Badge } from "@/components/ui/badge";
 export default function TopBar() {
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+      <div className="flex items-center">
+        <SidebarTrigger className="mr-4" />
+      </div>
       <div className="flex items-center flex-1 max-w-lg">
         <Search className="h-4 w-4 text-muted-foreground mr-2" />
         <Input

@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar, Clock, MapPin, Users as UsersIcon } from "lucide-react";
+import { Plus, Calendar, Clock, MapPin, Users as UsersIcon, Edit, Trash2, Play, Pause, Square } from "lucide-react";
+import MeetingForm from "@/components/MeetingForm";
 
 interface Meeting {
   id: string;
@@ -56,6 +57,7 @@ export default function Meetings() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -188,6 +190,56 @@ export default function Meetings() {
     }
   };
 
+  const handleStatusChange = async (meetingId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("meetings")
+        .update({ status: newStatus })
+        .eq("id", meetingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Meeting status updated",
+      });
+
+      fetchMeetings();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update meeting status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteMeeting = async (meetingId: string) => {
+    if (!confirm("Are you sure you want to delete this meeting?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("meetings")
+        .delete()
+        .eq("id", meetingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Meeting deleted successfully",
+      });
+
+      fetchMeetings();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete meeting",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -221,115 +273,31 @@ export default function Meetings() {
           <h1 className="text-2xl md:text-3xl font-bold">Meetings</h1>
           <p className="text-muted-foreground">Manage and schedule meetings</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Schedule Meeting
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Schedule New Meeting</DialogTitle>
-              <DialogDescription>
-                Create a new meeting and invite participants.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateMeeting}>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Meeting Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="start_time">Start Time</Label>
-                    <Input
-                      id="start_time"
-                      type="datetime-local"
-                      value={formData.start_time}
-                      onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="end_time">End Time</Label>
-                    <Input
-                      id="end_time"
-                      type="datetime-local"
-                      value={formData.end_time}
-                      onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Conference Room A, Online, etc."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="meeting_type">Meeting Type</Label>
-                  <Select
-                    value={formData.meeting_type}
-                    onValueChange={(value) => setFormData({ ...formData, meeting_type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="meeting">Meeting</SelectItem>
-                      <SelectItem value="standup">Standup</SelectItem>
-                      <SelectItem value="review">Review</SelectItem>
-                      <SelectItem value="training">Training</SelectItem>
-                      <SelectItem value="interview">Interview</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="meeting_link">Meeting Link (Optional)</Label>
-                  <Input
-                    id="meeting_link"
-                    value={formData.meeting_link}
-                    onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
-                    placeholder="https://zoom.us/j/..."
-                  />
-                </div>
-              </div>
-              <DialogFooter className="mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Creating..." : "Create Meeting"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Schedule Meeting
+        </Button>
       </div>
+
+      <MeetingForm
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        meeting={null}
+        onSuccess={() => {
+          setIsCreateOpen(false);
+          fetchMeetings();
+        }}
+      />
+
+      <MeetingForm
+        open={!!editingMeeting}
+        onOpenChange={(open) => !open && setEditingMeeting(null)}
+        meeting={editingMeeting}
+        onSuccess={() => {
+          setEditingMeeting(null);
+          fetchMeetings();
+        }}
+      />
 
       <div className="w-full max-w-md">
         <Input
@@ -371,31 +339,101 @@ export default function Meetings() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">
-                        {new Date(meeting.start_time).toLocaleDateString()}
-                      </p>
-                      <p className="text-muted-foreground">
-                        {new Date(meeting.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
-                        {new Date(meeting.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                  {meeting.location && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{meeting.location}</span>
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">
+                          {new Date(meeting.start_time).toLocaleDateString()}
+                        </p>
+                        <p className="text-muted-foreground">
+                          {new Date(meeting.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                          {new Date(meeting.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <UsersIcon className="h-4 w-4 text-muted-foreground" />
-                    <span>{meeting.participants_count} participants</span>
+                    {meeting.location && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{meeting.location}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                      <span>{meeting.participants_count} participants</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{meeting.meeting_type}</Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{meeting.meeting_type}</Badge>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2 border-t">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingMeeting(meeting)}
+                      className="gap-2"
+                    >
+                      <Edit className="h-3 w-3" />
+                      Edit
+                    </Button>
+                    
+                    {meeting.status === "scheduled" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleStatusChange(meeting.id, "in-progress")}
+                        className="gap-2"
+                      >
+                        <Play className="h-3 w-3" />
+                        Start
+                      </Button>
+                    )}
+                    
+                    {meeting.status === "in-progress" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStatusChange(meeting.id, "completed")}
+                          className="gap-2"
+                        >
+                          <Square className="h-3 w-3" />
+                          Complete
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStatusChange(meeting.id, "scheduled")}
+                          className="gap-2"
+                        >
+                          <Pause className="h-3 w-3" />
+                          Hold
+                        </Button>
+                      </>
+                    )}
+                    
+                    {meeting.status !== "completed" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleStatusChange(meeting.id, "cancelled")}
+                        className="gap-2"
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                    
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDeleteMeeting(meeting.id)}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
                 {meeting.meeting_link && (
