@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import bcrypt from "bcryptjs";
 
 interface Role {
   id: string;
@@ -187,8 +188,9 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
           password = Math.random().toString(36).slice(-8).toUpperCase();
         }
 
-        // Hash password (in real app, you'd hash this properly)
-        const passwordHash = btoa(password); // Simple base64 encoding for demo
+        // Hash password properly
+        const passwordHash = await bcrypt.hash(password, 10);
+        const selectedRole = roles.find(r => r.id === formData.role_id);
 
         const { error } = await supabase
           .from("users")
@@ -206,14 +208,40 @@ export default function UserForm({ open, onOpenChange, user, onSuccess }: UserFo
 
         if (error) throw error;
 
-        toast({
-          title: "Success",
-          description: `User created successfully! User ID: ${userIdLogin}, Password: ${password}`,
-          duration: 10000,
-        });
+        // Send credentials email
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-user-credentials', {
+            body: {
+              email: formData.email,
+              firstName: formData.first_name,
+              lastName: formData.last_name,
+              userIdLogin,
+              password,
+              roleName: selectedRole?.role_name || 'User'
+            }
+          });
 
-        // TODO: Send email with credentials here
-        console.log(`User credentials - ID: ${userIdLogin}, Password: ${password}`);
+          if (emailError) {
+            console.error('Failed to send email:', emailError);
+            toast({
+              title: "User created successfully",
+              description: `User ID: ${userIdLogin}, but email sending failed. Password: ${password}`,
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "User created successfully", 
+              description: `User ID: ${userIdLogin}, credentials sent to ${formData.email}`,
+            });
+          }
+        } catch (emailErr) {
+          console.error('Email service error:', emailErr);
+          toast({
+            title: "User created successfully",
+            description: `User ID: ${userIdLogin}, but email sending failed. Password: ${password}`,
+            variant: "destructive"
+          });
+        }
       }
 
       onOpenChange(false);
