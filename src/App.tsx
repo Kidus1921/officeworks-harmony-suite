@@ -8,6 +8,8 @@ import Tasks from "./pages/Tasks";
 import Meetings from "./pages/Meetings";
 import Dashboard from "./pages/Dashboard";
 import PersonalTodo from "./pages/PersonalTodo";
+import Attendance from "./pages/Attendance";
+import LeaveRequests from "./pages/LeaveRequests";
 import Login from "./pages/Login";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
@@ -43,8 +45,8 @@ const App = () => (
             <Route path="/tasks" element={<ProtectedRoute><Layout><Tasks /></Layout></ProtectedRoute>} />
             <Route path="/meetings" element={<ProtectedRoute><Layout><Meetings /></Layout></ProtectedRoute>} />
             <Route path="/personal-todo" element={<ProtectedRoute><Layout><PersonalTodo /></Layout></ProtectedRoute>} />
-            <Route path="/attendance" element={<ProtectedRoute><Layout><div className="p-6"><h1 className="text-3xl font-bold">Attendance</h1><p className="text-muted-foreground">Coming soon...</p></div></Layout></ProtectedRoute>} />
-            <Route path="/leave-requests" element={<ProtectedRoute><Layout><div className="p-6"><h1 className="text-3xl font-bold">Leave Requests</h1><p className="text-muted-foreground">Coming soon...</p></div></Layout></ProtectedRoute>} />
+            <Route path="/attendance" element={<ProtectedRoute><Layout><Attendance /></Layout></ProtectedRoute>} />
+            <Route path="/leave-requests" element={<ProtectedRoute><Layout><LeaveRequests /></Layout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
